@@ -1,5 +1,5 @@
 //
-//  LoginPromptView.swift
+//  UnauthorizedView.swift
 //  LiveBeer
 //
 //  Created by  Uladzimir on 23.02.26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct LoginPromptView: View {
+struct UnauthorizedView: View {
     let onLoginTap: () -> Void
 
     var body: some View {

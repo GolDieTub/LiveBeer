@@ -20,7 +20,7 @@ struct AppCoordinatorView: View {
                     if session.isAuthenticated {
                         HomeView(onLogout: { session.signOut() })
                     } else {
-                        LoginPromptView(onLoginTap: { router.presentRoot(.welcome) })
+                        UnauthorizedView(onLoginTap: { router.presentRoot(.welcome) })
                     }
                 }
                 .tabItem { Image(systemName: "house"); Text("Главная") }
