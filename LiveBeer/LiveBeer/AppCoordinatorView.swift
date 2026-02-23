@@ -60,6 +60,33 @@ struct AppCoordinatorView: View {
             }
         }
         .environmentObject(router)
+        .alert(item: $router.confirmation) { c in
+            if c.isDestructive {
+                return Alert(
+                    title: Text(c.title),
+                    message: Text(c.message),
+                    primaryButton: .destructive(Text(c.confirmTitle), action: {
+                        c.onConfirm()
+                        router.clearConfirmation()
+                    }),
+                    secondaryButton: .cancel(Text(c.cancelTitle), action: {
+                        router.clearConfirmation()
+                    })
+                )
+            } else {
+                return Alert(
+                    title: Text(c.title),
+                    message: Text(c.message),
+                    primaryButton: .default(Text(c.confirmTitle), action: {
+                        c.onConfirm()
+                        router.clearConfirmation()
+                    }),
+                    secondaryButton: .cancel(Text(c.cancelTitle), action: {
+                        router.clearConfirmation()
+                    })
+                )
+            }
+        }
     }
 
     @ViewBuilder
@@ -77,10 +104,13 @@ struct AppCoordinatorView: View {
             .background(Color.white.ignoresSafeArea())
 
         case .registration:
-            RegistrationView(
+            RegistrationFlowView(
                 vm: registrationVM,
-                onBack: { router.modalPop() },
-                onSubmit: { Task { await handleRegistrationSubmit() } }
+                onBackToWelcome: { router.modalPop() },
+                onDone: { phone in
+                    session.signIn(phone: phone)
+                    router.dismissModal()
+                }
             )
             .background(Color.white.ignoresSafeArea())
 
@@ -113,41 +143,5 @@ struct AppCoordinatorView: View {
         }
 
         return .asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
-    }
-
-    private func handleRegistrationSubmit() async {
-        let ok = registrationVM.validate()
-
-        if let alert = registrationVM.under18Alert {
-            router.showError(title: alert.title, message: alert.message, buttonTitle: alert.buttonTitle)
-            return
-        }
-
-        guard ok else {
-            return
-        }
-
-        let phone = AuthService.shared.normalizePhone(registrationVM.phone)
-
-        if UserStore.shared.exists(phone: phone) {
-            router.showError(
-                title: "Регистрация невозможна",
-                message: "Пользователь с таким номером уже зарегистрирован. Попробуйте войти или укажите другой номер.",
-                buttonTitle: "Понятно"
-            )
-            registrationVM.showInvalid()
-            return
-        }
-
-        let user = User(
-            phone: phone,
-            name: registrationVM.name.trimmingCharacters(in: .whitespacesAndNewlines),
-            birthDate: registrationVM.birthDate.trimmingCharacters(in: .whitespacesAndNewlines),
-            createdAt: Date()
-        )
-
-        UserStore.shared.add(user)
-
-        router.modalPop()
     }
 }

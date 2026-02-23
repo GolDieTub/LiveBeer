@@ -12,7 +12,7 @@ import Combine
 final class UserStore: ObservableObject {
     static let shared = UserStore()
 
-    private let usersKey = "lb.users.v1"
+    let usersKey = "lb.users.v1"
     @Published private(set) var users: [User] = []
 
     private init() {
@@ -28,8 +28,22 @@ final class UserStore: ObservableObject {
     }
 
     func add(_ user: User) {
-        if exists(phone: user.phone) { return }
+        guard !exists(phone: user.phone) else { return }
         users.append(user)
+        save(users)
+    }
+
+    func upsert(_ user: User) {
+        if let idx = users.firstIndex(where: { $0.phone == user.phone }) {
+            users[idx] = user
+        } else {
+            users.append(user)
+        }
+        save(users)
+    }
+
+    func delete(phone: String) {
+        users.removeAll(where: { $0.phone == phone })
         save(users)
     }
 

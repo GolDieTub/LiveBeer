@@ -41,7 +41,7 @@ struct BirthDatePickerSheet: View {
 
             Divider()
 
-            DatePicker("", selection: $date, displayedComponents: [.date])
+            DatePicker("", selection: $date, in: ...Date(), displayedComponents: [.date])
                 .datePickerStyle(.wheel)
                 .labelsHidden()
                 .frame(maxWidth: .infinity)
