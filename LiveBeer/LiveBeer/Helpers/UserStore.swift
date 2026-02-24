@@ -12,48 +12,79 @@ import Combine
 final class UserStore: ObservableObject {
     static let shared = UserStore()
 
-    let usersKey = "lb.users.v1"
+    private let legacyUsersArrayKey = "lb.users.v1"
+    private let usersByPhoneKey = "lb.usersByPhone.v1"
+
     @Published private(set) var users: [User] = []
 
+    private var usersByPhone: [String: User] = [:] {
+        didSet {
+            users = usersByPhone.values.sorted { $0.createdAt > $1.createdAt }
+        }
+    }
+
     private init() {
-        users = load()
+        if let dict = loadDictionary() {
+            usersByPhone = dict
+        } else {
+            let migrated = migrateFromLegacyArrayIfNeeded()
+            usersByPhone = migrated
+            saveDictionary(migrated)
+        }
     }
 
     func exists(phone: String) -> Bool {
-        users.contains(where: { $0.phone == phone })
+        usersByPhone[phone] != nil
     }
 
     func user(phone: String) -> User? {
-        users.first(where: { $0.phone == phone })
+        usersByPhone[phone]
     }
 
     func add(_ user: User) {
-        guard !exists(phone: user.phone) else { return }
-        users.append(user)
-        save(users)
+        guard usersByPhone[user.phone] == nil else { return }
+        usersByPhone[user.phone] = user
+        saveDictionary(usersByPhone)
     }
 
     func upsert(_ user: User) {
-        if let idx = users.firstIndex(where: { $0.phone == user.phone }) {
-            users[idx] = user
-        } else {
-            users.append(user)
-        }
-        save(users)
+        usersByPhone[user.phone] = user
+        saveDictionary(usersByPhone)
     }
 
     func delete(phone: String) {
-        users.removeAll(where: { $0.phone == phone })
-        save(users)
+        usersByPhone.removeValue(forKey: phone)
+        saveDictionary(usersByPhone)
     }
 
-    private func load() -> [User] {
-        guard let data = UserDefaults.standard.data(forKey: usersKey) else { return [] }
-        return (try? JSONDecoder().decode([User].self, from: data)) ?? []
+    func deleteAll() {
+        usersByPhone.removeAll()
+        saveDictionary(usersByPhone)
     }
 
-    private func save(_ users: [User]) {
-        guard let data = try? JSONEncoder().encode(users) else { return }
-        UserDefaults.standard.set(data, forKey: usersKey)
+    private func loadDictionary() -> [String: User]? {
+        guard let data = UserDefaults.standard.data(forKey: usersByPhoneKey) else { return nil }
+        return try? JSONDecoder().decode([String: User].self, from: data)
+    }
+
+    private func saveDictionary(_ dict: [String: User]) {
+        guard let data = try? JSONEncoder().encode(dict) else { return }
+        UserDefaults.standard.set(data, forKey: usersByPhoneKey)
+    }
+
+    private func migrateFromLegacyArrayIfNeeded() -> [String: User] {
+        guard let data = UserDefaults.standard.data(forKey: legacyUsersArrayKey),
+              let legacy = try? JSONDecoder().decode([User].self, from: data)
+        else {
+            return [:]
+        }
+
+        var dict: [String: User] = [:]
+        for u in legacy {
+            dict[u.phone] = u
+        }
+
+        UserDefaults.standard.removeObject(forKey: legacyUsersArrayKey)
+        return dict
     }
 }
