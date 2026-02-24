@@ -31,7 +31,6 @@ struct BarcodePlate: View {
         .frame(height: 138)
         .frame(maxWidth: .infinity)
         .background(Color.white)
-        .clipShape(RoundedCorners(tl: 0, tr: 0, bl: 18, br: 18))
     }
 }
 

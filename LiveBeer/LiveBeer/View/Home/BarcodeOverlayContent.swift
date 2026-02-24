@@ -16,6 +16,9 @@ struct BarcodeOverlayContent: View {
     var body: some View {
         VStack(spacing: 18) {
             BarcodePlate(payload: barcodeValue, digitsText: digitsText)
+                .clipShape(
+                    RoundedCorners(tl: 10, tr: 10, bl: 10, br: 10)
+                )
                 .padding(.horizontal, 20)
 
             VStack(spacing: 8) {

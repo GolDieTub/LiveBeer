@@ -85,7 +85,7 @@ struct HomeView: View {
         }
         .background(Color.white)
         .clipShape(
-            RoundedCorners(tl: 18, tr: 18, bl: 0, br: 0)
+            RoundedCorners(tl: 10, tr: 10, bl: 10, br: 10)
         )
         .shadow(radius: 0.6, y: 0.6)
     }
