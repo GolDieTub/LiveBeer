@@ -156,16 +156,25 @@ struct ProfileView: View {
     }
 
     private var supportLine: some View {
-        (Text("Если вы хотите изменить номер телефона, то обратитесь в нашу ")
-            .foregroundStyle(.secondary)
-            + Text("тех.поддержку")
-            .foregroundStyle(.blue))
+        Text(supportAttributedText)
             .font(.system(size: 13))
-            .onTapGesture {
-                if let url = URL(string: "https://rickroll.it") {
-                    UIApplication.shared.open(url)
-                }
-            }
+            .lineSpacing(2)
+            .environment(\.openURL, OpenURLAction { url in
+                UIApplication.shared.open(url)
+                return .handled
+            })
+    }
+
+    private var supportAttributedText: AttributedString {
+        var full = AttributedString("Если вы хотите изменить номер телефона, то обратитесь в нашу ")
+        full.foregroundColor = Color.secondary
+
+        var linkPart = AttributedString("тех.поддержку")
+        linkPart.foregroundColor = .blue
+        linkPart.link = URL(string: "https://rickroll.it")
+
+        full.append(linkPart)
+        return full
     }
 
     private var nameField: some View {
