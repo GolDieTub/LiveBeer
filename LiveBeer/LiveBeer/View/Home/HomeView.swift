@@ -8,20 +8,316 @@
 import SwiftUI
 
 struct HomeView: View {
-    let onLogout: () -> Void
+    @EnvironmentObject private var router: AppRouter
+    @Environment(\.scenePhase) private var scenePhase
+
+    @StateObject private var vm = HomeViewModel()
+    @StateObject private var session = SessionManager.shared
+    @StateObject private var newsStore = NewsFeedStore(apiKey: "b5b0813704b64dd093c61ab51a87226e")
+
+    private let leftPadding: CGFloat = 24
+    private let rightPadding: CGFloat = 19
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Главная")
-                .font(.title2)
-                .fontWeight(.semibold)
-            Text("Пользователь вошёл")
-                .foregroundStyle(.secondary)
-            Button("Выйти") {
-                onLogout()
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 16) {
+                header
+                litersCard
+                pointsCard
+                newsHeaderRow
+                newsStrip
+                Spacer(minLength: 16)
             }
-            .buttonStyle(.borderedProminent)
+            .padding(.leading, leftPadding)
+            .padding(.trailing, rightPadding)
+            .padding(.top, 12)
+            .padding(.bottom, 24)
         }
-        .padding()
+        .onAppear {
+            vm.syncFromSession(session)
+            Task { await vm.refresh() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                vm.syncFromSession(session)
+                Task { await vm.refresh() }
+            }
+        }
+        .task {
+            await newsStore.ensureInitialLoaded()
+        }
+    }
+
+    private var header: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.yellow)
+                    .overlay {
+                        Image("bg")
+                            .resizable()
+                            .scaledToFill()
+                            .opacity(0.22)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                    .frame(height: 76)
+
+                Text("Привет, \(vm.displayName)!")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 16)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+
+            Button {
+                router.presentOverlay(.barcode(
+                    barcodeValue: vm.barcodeValue,
+                    digitsText: vm.barcodeDigitsText,
+                    title: vm.barcodeOverlayTitle,
+                    message: vm.barcodeOverlayMessage
+                ))
+            } label: {
+                BarcodePlate(payload: vm.barcodeValue, digitsText: vm.barcodeDigitsText)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var litersCard: some View {
+        let cardHeight: CGFloat = 164
+
+        let topPad: CGFloat = 16
+        let bottomPad: CGFloat = 18
+        let betweenBlocks: CGFloat = 8
+
+        let topLead: CGFloat = 24
+        let topTrail: CGFloat = 14
+
+        let bottomLead: CGFloat = 24
+        let bottomTrail: CGFloat = 10
+
+        let cols = 5
+        let total = max(0, vm.litersGridTotal)
+        let rows = max(1, Int(ceil(Double(total) / Double(cols))))
+
+        let capSpacing: CGFloat = 10
+        let topHSpacing: CGFloat = 22
+
+        let bottomBlockMinHeight: CGFloat = 56
+
+        let bottleBase: CGFloat = 64
+        let bottleMin: CGFloat = 44
+
+        return ZStack {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.black)
+                .frame(height: cardHeight)
+
+            GeometryReader { geo in
+                let w = geo.size.width
+                let h = geo.size.height
+
+                let topContentW = max(0, w - topLead - topTrail)
+
+                let topAvailH = max(0, h - topPad - bottomPad - betweenBlocks - bottomBlockMinHeight)
+                let capSizeH = (topAvailH - capSpacing * CGFloat(max(0, rows - 1))) / CGFloat(rows)
+
+                let capSizeWMax = (topContentW - topHSpacing - capSpacing * CGFloat(max(0, cols - 1))) / CGFloat(cols)
+                let capSize = max(20, floor(min(capSizeWMax, capSizeH)))
+
+                let capsGridW = capSize * CGFloat(cols) + capSpacing * CGFloat(max(0, cols - 1))
+                let topBlockH = capSize * CGFloat(rows) + capSpacing * CGFloat(max(0, rows - 1))
+
+                let remainingW = max(0, topContentW - capsGridW - topHSpacing)
+
+                let bottleTargetW = min(bottleBase, remainingW)
+                let bottleTargetH = min(bottleBase * 1.35, topBlockH)
+
+                let bottleSize = max(bottleMin, floor(min(bottleTargetW, bottleTargetH)))
+
+                let bottleXInset = max(0, (remainingW - bottleSize) / 2)
+                let bottleYInset = max(0, (topBlockH - bottleSize) / 2)
+
+                VStack(spacing: betweenBlocks) {
+                    HStack(alignment: .top, spacing: topHSpacing) {
+                        CapGrid(
+                            current: vm.litersGridCurrent,
+                            total: vm.litersGridTotal,
+                            columns: cols,
+                            itemSize: capSize,
+                            spacing: capSpacing,
+                            activeName: "activeCup",
+                            inactiveName: "inactiveCup"
+                        )
+                        .frame(width: capsGridW, height: topBlockH, alignment: .topLeading)
+
+                        ZStack(alignment: .topLeading) {
+                            Color.clear
+                            Image(vm.giftBottleAssetName)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: bottleSize, height: bottleSize)
+                                .padding(.leading, bottleXInset)
+                                .padding(.top, bottleYInset)
+                        }
+                        .frame(width: remainingW, height: topBlockH, alignment: .topLeading)
+                    }
+                    .padding(.top, topPad)
+                    .padding(.leading, topLead)
+                    .padding(.trailing, topTrail)
+
+                    HStack(spacing: 14) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(vm.litersProgressText)
+                                .font(.system(size: 32, weight: .heavy))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+
+                            Text(vm.litersTitleText)
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.92))
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Rectangle()
+                            .fill(Color.white.opacity(0.10))
+                            .frame(width: 1)
+                            .frame(maxHeight: .infinity)
+
+                        Text(vm.giftMessageText)
+                            .padding(.top, 5)
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.leading, bottomLead)
+                    .padding(.trailing, bottomTrail)
+                    .padding(.bottom, bottomPad)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
+    }
+
+    private var pointsCard: some View {
+        ZStack(alignment: .topTrailing) {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.black)
+                .frame(height: 150)
+
+            Image("logInScreen")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 145)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .clipped()
+                .offset(x: -10)
+                .allowsHitTesting(false)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(vm.pointsValueText)
+                    .font(.system(size: 32, weight: .heavy))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+
+                Text(vm.pointsTitleText)
+                    .padding(.top, 3)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.92))
+
+                Text(vm.pointsBodyText)
+                    .padding(.top, 8)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.80))
+                    .lineSpacing(2)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 16)
+            .padding(.vertical, 16)
+            .padding(.trailing, 140)
+
+            Button {
+                router.presentOverlay(.rules(
+                    title: vm.rulesTitle,
+                    subtitle: vm.rulesSubtitle,
+                    bodyText: vm.rulesBody
+                ))
+            } label: {
+                Image("moreInfo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 32, height: 32)
+                    //.padding(10)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .padding(8)
+            .offset(x: 10, y: -10)
+        }
+        .frame(height: 150)
+    }
+
+    private var newsHeaderRow: some View {
+        Button {
+            router.selectTab(.info)
+        } label: {
+            HStack {
+                Text("Будь в курсе")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.primary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.top, 4)
+    }
+
+    private var newsStrip: some View {
+        Group {
+            if newsStore.isLoadingInitial && newsStore.articles.isEmpty {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Загружаем новости…")
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 8)
+            } else if let err = newsStore.errorText, newsStore.articles.isEmpty {
+                Text(err)
+                    .foregroundStyle(.red)
+                    .font(.system(size: 13))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(newsStore.articles) { a in
+                            Button {
+                                router.presentSheet(.infoDetail(article: a))
+                            } label: {
+                                NewsMiniCard(article: a)
+                            }
+                            .buttonStyle(.plain)
+                            .onAppear {
+                                newsStore.loadMoreIfNeeded(current: a)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 6)
+                }
+            }
+        }
     }
 }

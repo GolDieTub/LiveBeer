@@ -15,10 +15,10 @@ struct AppCoordinatorView: View {
 
     var body: some View {
         ZStack {
-            TabView {
+            TabView(selection: $router.selectedTab) {
                 NavigationStack(path: $router.path) {
                     if session.isAuthenticated {
-                        HomeView(onLogout: { session.signOut() })
+                        HomeView()
                     } else {
                         UnauthorizedView(onLoginTap: { router.presentRoot(.welcome) })
                     }
@@ -52,6 +52,12 @@ struct AppCoordinatorView: View {
                 .animation(.spring(response: 0.35, dampingFraction: 0.9), value: router.modalStack)
             }
 
+            if let overlay = router.overlay {
+                overlayView(for: overlay)
+                    .zIndex(4000)
+                    .transition(.opacity)
+            }
+
             if let err = router.overlayError {
                 FullScreenErrorOverlay(error: err) {
                     router.clearError()
@@ -60,6 +66,14 @@ struct AppCoordinatorView: View {
             }
         }
         .environmentObject(router)
+        .sheet(item: $router.sheet) { sheet in
+            switch sheet {
+            case .infoDetail(let article):
+                NavigationStack {
+                    InfoDetailView(article: article, showsBackButton: true)
+                }
+            }
+        }
         .alert(item: $router.confirmation) { c in
             if c.isDestructive {
                 return Alert(
@@ -84,6 +98,38 @@ struct AppCoordinatorView: View {
                     secondaryButton: .cancel(Text(c.cancelTitle), action: {
                         router.clearConfirmation()
                     })
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func overlayView(for overlay: AppOverlay) -> some View {
+        let isPresented = Binding<Bool>(
+            get: { router.overlay != nil },
+            set: { newValue in
+                if !newValue { router.dismissOverlay() }
+            }
+        )
+
+        switch overlay {
+        case .barcode(let barcodeValue, let digitsText, let title, let message):
+            HomeOverlay(isPresented: isPresented) {
+                BarcodeOverlayContent(
+                    barcodeValue: barcodeValue,
+                    digitsText: digitsText,
+                    title: title,
+                    message: message
+                )
+            }
+            .maxScreenBrightnessWhilePresented(isPresented: isPresented)
+
+        case .rules(let title, let subtitle, let bodyText):
+            HomeOverlay(isPresented: isPresented) {
+                RulesOverlayContent(
+                    title: title,
+                    subtitle: subtitle,
+                    bodyText: bodyText
                 )
             }
         }

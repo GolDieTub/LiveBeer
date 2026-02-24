@@ -18,15 +18,47 @@ struct AppConfirmation: Identifiable {
     let onConfirm: () -> Void
 }
 
+enum AppSheet: Identifiable, Equatable {
+    case infoDetail(article: InfoArticle)
+
+    var id: String {
+        switch self {
+        case .infoDetail(let article):
+            return "infoDetail:\(article.id)"
+        }
+    }
+}
+
 @MainActor
 final class AppRouter: ObservableObject {
     @Published var path = NavigationPath()
     @Published private(set) var modalStack: [AppRoute] = []
     @Published var overlayError: AppOverlayError? = nil
     @Published var confirmation: AppConfirmation? = nil
+    @Published var selectedTab: AppTab = .home
+    @Published var sheet: AppSheet? = nil
+    @Published var overlay: AppOverlay? = nil
 
     var currentModal: AppRoute? { modalStack.last }
     var previousModal: AppRoute? { modalStack.dropLast().last }
+
+    func selectTab(_ tab: AppTab) {
+        withAnimation(.default) {
+            selectedTab = tab
+        }
+    }
+
+    func presentSheet(_ sheet: AppSheet) {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            self.sheet = sheet
+        }
+    }
+
+    func dismissSheet() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            sheet = nil
+        }
+    }
 
     func push(_ route: AppRoute) {
         withAnimation(.default) {
@@ -106,5 +138,17 @@ final class AppRouter: ObservableObject {
 
     func clearConfirmation() {
         confirmation = nil
+    }
+
+    func presentOverlay(_ overlay: AppOverlay) {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            self.overlay = overlay
+        }
+    }
+
+    func dismissOverlay() {
+        withAnimation(.easeInOut(duration: 0.18)) {
+            overlay = nil
+        }
     }
 }
