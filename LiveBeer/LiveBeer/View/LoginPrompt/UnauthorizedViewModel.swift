@@ -1,5 +1,5 @@
 //
-//  LoginPromptViewModel.swift
+//  UnauthorizedViewModel.swift
 //  LiveBeer
 //
 //  Created by  Uladzimir on 23.02.26.
@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 
 @MainActor
-final class LoginPromptViewModel: ObservableObject {
+final class UnauthorizedViewModel: ObservableObject {
     
     private let onLoginTap: () -> Void
 

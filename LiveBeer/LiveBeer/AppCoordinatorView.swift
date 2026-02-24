@@ -15,18 +15,18 @@ struct AppCoordinatorView: View {
 
     var body: some View {
         ZStack {
-            TabView {
+            TabView(selection: $router.selectedTab) {
                 NavigationStack(path: $router.path) {
                     if session.isAuthenticated {
-                        HomeView(onLogout: { session.signOut() })
+                        HomeView()
                     } else {
-                        LoginPromptView(onLoginTap: { router.presentRoot(.welcome) })
+                        UnauthorizedView(onLoginTap: { router.presentRoot(.welcome) })
                     }
                 }
                 .tabItem { Image(systemName: "house"); Text("Главная") }
                 .tag(AppTab.home)
 
-                NavigationStack { InfoStubView() }
+                NavigationStack { InfoView() }
                     .tabItem { Image(systemName: "info.circle"); Text("Инфо") }
                     .tag(AppTab.info)
 
@@ -34,7 +34,7 @@ struct AppCoordinatorView: View {
                     .tabItem { Image(systemName: "cart"); Text("Магазины") }
                     .tag(AppTab.shops)
 
-                NavigationStack { ProfileStubView() }
+                NavigationStack { ProfileView() }
                     .tabItem { Image(systemName: "person"); Text("Профиль") }
                     .tag(AppTab.profile)
             }
@@ -52,6 +52,12 @@ struct AppCoordinatorView: View {
                 .animation(.spring(response: 0.35, dampingFraction: 0.9), value: router.modalStack)
             }
 
+            if let overlay = router.overlay {
+                overlayView(for: overlay)
+                    .zIndex(4000)
+                    .transition(.opacity)
+            }
+
             if let err = router.overlayError {
                 FullScreenErrorOverlay(error: err) {
                     router.clearError()
@@ -60,6 +66,73 @@ struct AppCoordinatorView: View {
             }
         }
         .environmentObject(router)
+        .sheet(item: $router.sheet) { sheet in
+            switch sheet {
+            case .infoDetail(let article):
+                NavigationStack {
+                    InfoDetailView(article: article, showsBackButton: true)
+                }
+            }
+        }
+        .alert(item: $router.confirmation) { c in
+            if c.isDestructive {
+                return Alert(
+                    title: Text(c.title),
+                    message: Text(c.message),
+                    primaryButton: .destructive(Text(c.confirmTitle), action: {
+                        c.onConfirm()
+                        router.clearConfirmation()
+                    }),
+                    secondaryButton: .cancel(Text(c.cancelTitle), action: {
+                        router.clearConfirmation()
+                    })
+                )
+            } else {
+                return Alert(
+                    title: Text(c.title),
+                    message: Text(c.message),
+                    primaryButton: .default(Text(c.confirmTitle), action: {
+                        c.onConfirm()
+                        router.clearConfirmation()
+                    }),
+                    secondaryButton: .cancel(Text(c.cancelTitle), action: {
+                        router.clearConfirmation()
+                    })
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func overlayView(for overlay: AppOverlay) -> some View {
+        let isPresented = Binding<Bool>(
+            get: { router.overlay != nil },
+            set: { newValue in
+                if !newValue { router.dismissOverlay() }
+            }
+        )
+
+        switch overlay {
+        case .barcode(let barcodeValue, let digitsText, let title, let message):
+            HomeOverlay(isPresented: isPresented) {
+                BarcodeOverlayContent(
+                    barcodeValue: barcodeValue,
+                    digitsText: digitsText,
+                    title: title,
+                    message: message
+                )
+            }
+            .maxScreenBrightnessWhilePresented(isPresented: isPresented)
+
+        case .rules(let title, let subtitle, let bodyText):
+            HomeOverlay(isPresented: isPresented) {
+                RulesOverlayContent(
+                    title: title,
+                    subtitle: subtitle,
+                    bodyText: bodyText
+                )
+            }
+        }
     }
 
     @ViewBuilder
@@ -77,10 +150,13 @@ struct AppCoordinatorView: View {
             .background(Color.white.ignoresSafeArea())
 
         case .registration:
-            RegistrationView(
+            RegistrationFlowView(
                 vm: registrationVM,
-                onBack: { router.modalPop() },
-                onSubmit: { Task { await handleRegistrationSubmit() } }
+                onBackToWelcome: { router.modalPop() },
+                onDone: { phone in
+                    session.signIn(phone: phone)
+                    router.dismissModal()
+                }
             )
             .background(Color.white.ignoresSafeArea())
 
@@ -113,41 +189,5 @@ struct AppCoordinatorView: View {
         }
 
         return .asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
-    }
-
-    private func handleRegistrationSubmit() async {
-        let ok = registrationVM.validate()
-
-        if let alert = registrationVM.under18Alert {
-            router.showError(title: alert.title, message: alert.message, buttonTitle: alert.buttonTitle)
-            return
-        }
-
-        guard ok else {
-            return
-        }
-
-        let phone = AuthService.shared.normalizePhone(registrationVM.phone)
-
-        if UserStore.shared.exists(phone: phone) {
-            router.showError(
-                title: "Регистрация невозможна",
-                message: "Пользователь с таким номером уже зарегистрирован. Попробуйте войти или укажите другой номер.",
-                buttonTitle: "Понятно"
-            )
-            registrationVM.showInvalid()
-            return
-        }
-
-        let user = User(
-            phone: phone,
-            name: registrationVM.name.trimmingCharacters(in: .whitespacesAndNewlines),
-            birthDate: registrationVM.birthDate.trimmingCharacters(in: .whitespacesAndNewlines),
-            createdAt: Date()
-        )
-
-        UserStore.shared.add(user)
-
-        router.modalPop()
     }
 }

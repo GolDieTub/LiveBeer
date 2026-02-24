@@ -1,5 +1,5 @@
 //
-//  LoginPromptView.swift
+//  UnauthorizedView.swift
 //  LiveBeer
 //
 //  Created by  Uladzimir on 23.02.26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct LoginPromptView: View {
+struct UnauthorizedView: View {
     let onLoginTap: () -> Void
 
     var body: some View {
@@ -26,7 +26,7 @@ struct LoginPromptView: View {
                 }
 
                 VStack(spacing: 16) {
-                    Spacer().frame(height: 40)
+                    Spacer().frame(height: 100)
 
                     Text("Войдите в\nприложение")
                         .font(.system(size: 34, weight: .bold))

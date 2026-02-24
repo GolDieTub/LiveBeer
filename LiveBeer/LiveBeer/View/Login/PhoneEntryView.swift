@@ -18,7 +18,6 @@ struct PhoneEntryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-
             Button(action: onBack) {
                 HStack(spacing: 6) {
                     Image(systemName: "chevron.left")
@@ -52,7 +51,19 @@ struct PhoneEntryView: View {
 
             Button {
                 if !vm.validate() { return }
+
                 let normalized = AuthService.shared.normalizePhone(vm.phone)
+
+                if !UserStore.shared.exists(phone: normalized) {
+                    router.showError(
+                        title: "Аккаунт не найден",
+                        message: "Пользователь с таким номером не зарегистрирован. Проверьте номер или нажмите «Регистрация».",
+                        buttonTitle: "Ок"
+                    )
+                    vm.showInvalid()
+                    return
+                }
+
                 let res = AuthService.shared.requestCode(for: normalized)
                 AuthService.shared.sendCodeStub(to: res.phone, code: res.code)
                 onNext(res.phone, res.code)
@@ -104,7 +115,6 @@ struct PhoneEntryView: View {
         let stroke = (vm.phoneError != nil || vm.isInvalid) ? Color.red : Color.black.opacity(0.08)
 
         return VStack(alignment: .leading, spacing: 0) {
-
             TextField("+7 (___) ___ __ __", text: $vm.phone)
                 .keyboardType(.phonePad)
                 .focused($focused)

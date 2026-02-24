@@ -21,7 +21,7 @@ struct RegistrationView: View {
     var onSubmit: () -> Void = {}
 
     private enum Field {
-        case phone, name, birth
+        case phone, name
     }
 
     var body: some View {
@@ -55,12 +55,20 @@ struct RegistrationView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .top)
         .onAppear { vm.reset() }
+        .onChange(of: vm.phone) {
+            vm.phoneError = nil
+            if vm.isInvalid { vm.clearInvalid() }
+        }
         .onChange(of: vm.name) {
             vm.nameError = nil
             if vm.isInvalid { vm.clearInvalid() }
         }
         .onChange(of: vm.birthDate) {
             vm.birthError = nil
+            if vm.isInvalid { vm.clearInvalid() }
+        }
+        .onChange(of: vm.isAgreementChecked) {
+            if vm.isAgreementChecked { vm.agreementError = nil }
             if vm.isInvalid { vm.clearInvalid() }
         }
     }
@@ -103,9 +111,7 @@ struct RegistrationView: View {
                 keyboard: .phonePad,
                 focus: .phone,
                 errorText: vm.phoneError,
-                onChange: { newValue in
-                    vm.setPhone(newValue)
-                }
+                onChange: { newValue in vm.setPhone(newValue) }
             )
             .modifier(ShakeEffect(animatableData: vm.phoneShake))
 
@@ -116,9 +122,7 @@ struct RegistrationView: View {
                 keyboard: .default,
                 focus: .name,
                 errorText: vm.nameError,
-                onChange: { _ in
-                    
-                }
+                onChange: { _ in }
             )
             .modifier(ShakeEffect(animatableData: vm.nameShake))
 
@@ -133,8 +137,6 @@ struct RegistrationView: View {
             HStack(alignment: .top, spacing: 10) {
                 Button {
                     vm.isAgreementChecked.toggle()
-                    if vm.isAgreementChecked { vm.agreementError = nil }
-                    if vm.isInvalid { vm.clearInvalid() }
                 } label: {
                     ZStack {
                         RoundedRectangle(cornerRadius: 3)
@@ -151,14 +153,13 @@ struct RegistrationView: View {
                 }
                 .buttonStyle(.plain)
 
-                Group {
-                    Text("Я согласен с ")
-                        .foregroundStyle(Color.black.opacity(0.55))
-                    + Text("условиями обработки\nперсональных данных.")
-                        .foregroundStyle(.blue)
-                }
-                .font(.system(size: 12))
-                .lineSpacing(2)
+                Text(agreementAttributedText)
+                    .font(.system(size: 12))
+                    .lineSpacing(2)
+                    .environment(\.openURL, OpenURLAction { url in
+                        UIApplication.shared.open(url)
+                        return .handled
+                    })
             }
 
             inlineErrorText(vm.agreementError)
@@ -166,11 +167,28 @@ struct RegistrationView: View {
         .modifier(ShakeEffect(animatableData: vm.agreementShake))
     }
 
+    private var agreementAttributedText: AttributedString {
+        var full = AttributedString("Я согласен с ")
+        full.foregroundColor = Color.black.opacity(0.55)
+
+        var linkPart = AttributedString("условиями обработки\nперсональных данных.")
+        linkPart.foregroundColor = .blue
+        linkPart.link = URL(string: "https://rickroll.it")
+
+        full.append(linkPart)
+        return full
+    }
+
     private var submitButton: some View {
         Button {
             let ok = vm.validate()
 
             if let alert = vm.under18Alert {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    vm.birthError = vm.birthError ?? "Некорректная дата рождения"
+                    vm.birthShake += 1
+                    vm.isInvalid = true
+                }
                 router.showError(title: alert.title, message: alert.message, buttonTitle: alert.buttonTitle)
                 return
             }
@@ -201,7 +219,7 @@ struct RegistrationView: View {
                 .padding(.bottom, 4)
 
             Button {
-                if let parsed = Self.birthFormatter.date(from: vm.birthDate) {
+                if let parsed = ProfileFormState.birthFormatter.date(from: vm.birthDate) {
                     birthTempDate = parsed
                 } else {
                     birthTempDate = Date()
@@ -234,7 +252,7 @@ struct RegistrationView: View {
                     date: $birthTempDate,
                     onCancel: {},
                     onDone: {
-                        vm.birthDate = Self.birthFormatter.string(from: birthTempDate)
+                        vm.birthDate = ProfileFormState.birthFormatter.string(from: birthTempDate)
                         vm.birthError = nil
                         if vm.isInvalid { vm.clearInvalid() }
                     }
@@ -254,14 +272,6 @@ struct RegistrationView: View {
             }
         }
     }
-
-    private static let birthFormatter: DateFormatter = {
-        let df = DateFormatter()
-        df.locale = Locale(identifier: "ru_RU")
-        df.timeZone = .current
-        df.dateFormat = "dd.MM.yyyy"
-        return df
-    }()
 
     private func fieldView(
         title: String,
