@@ -1,5 +1,5 @@
 //
-//  ProfileStubView.swift
+//  ProfileView.swift
 //  LiveBeer
 //
 //  Created by  Uladzimir on 23.02.26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ProfileStubView: View {
+struct ProfileView: View {
     @EnvironmentObject private var router: AppRouter
     @StateObject private var session = SessionManager.shared
     @StateObject private var userStore = UserStore.shared
@@ -28,7 +28,7 @@ struct ProfileStubView: View {
             Image("bg")
                 .resizable()
                 .scaledToFill()
-                .frame(height: 80)
+                .frame(height: 150)
                 .frame(maxWidth: .infinity)
                 .clipped()
                 .ignoresSafeArea()

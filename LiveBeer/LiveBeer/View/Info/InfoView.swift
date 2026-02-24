@@ -13,9 +13,9 @@ struct InfoView: View {
     private let cardHeight: CGFloat = 96
     private let imageInset: CGFloat = 16
 
+    @EnvironmentObject private var newsStore: NewsFeedStore
     @State private var selectedKind: InfoFeedKind = .promos
     @State private var promos: [InfoArticle] = InfoPromoFactory.promos()
-    @StateObject private var newsStore = NewsFeedStore(apiKey: "b5b0813704b64dd093c61ab51a87226e")
     @State private var presentedArticle: InfoArticle?
 
     var body: some View {

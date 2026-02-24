@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct LiveBeerApp: App {
     @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var newsStore = NewsFeedStore(apiKey: "") //b5b0813704b64dd093c61ab51a87226e
 
     init() {
         let region = MKCoordinateRegion(
@@ -23,6 +24,7 @@ struct LiveBeerApp: App {
     var body: some Scene {
         WindowGroup {
             AppCoordinatorView()
+                .environmentObject(newsStore)
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active {
                         NotificationCenter.default.post(name: .lbAppBecameActive, object: nil)

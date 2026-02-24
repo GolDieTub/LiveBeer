@@ -11,25 +11,50 @@ struct BarcodePlate: View {
     let payload: String
     let digitsText: String
 
-    var body: some View {
-        VStack(spacing: 10) {
-            BarcodeView(payload: payload)
-                .frame(height: 64)
-                .frame(maxWidth: .infinity)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    private let sideInset: CGFloat = 23
 
-            Text(digitsText)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.black.opacity(0.9))
-                .tracking(2)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+    var body: some View {
+        GeometryReader { geo in
+            let innerW = max(0, geo.size.width - sideInset * 2)
+
+            VStack(spacing: 8) {
+                BarcodeView(payload: payload, quietSpace: 2)
+                    .frame(width: innerW, height: 60)
+
+                SpacedDigitsText(text: digitsText)
+                    .frame(width: innerW)
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .top)
+            .padding(.top, 32)
+            .padding(.bottom, 16)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 138)
+        .frame(maxWidth: .infinity)
         .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .shadow(radius: 0.6, y: 0.6)
+        .clipShape(RoundedCorners(tl: 0, tr: 0, bl: 18, br: 18))
+    }
+}
+
+struct SpacedDigitsText: View {
+    let text: String
+
+    var body: some View {
+        GeometryReader { geo in
+            let chars = Array(text)
+            let count = max(1, chars.count)
+            let cellW = geo.size.width / CGFloat(count)
+
+            HStack(spacing: 0) {
+                ForEach(chars.indices, id: \.self) { i in
+                    Text(String(chars[i]))
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(.black)
+                        .monospacedDigit()
+                        .frame(width: cellW, alignment: .center)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .frame(height: 20)
     }
 }

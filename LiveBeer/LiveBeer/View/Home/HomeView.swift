@@ -9,11 +9,11 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var newsStore: NewsFeedStore
     @Environment(\.scenePhase) private var scenePhase
 
     @StateObject private var vm = HomeViewModel()
     @StateObject private var session = SessionManager.shared
-    @StateObject private var newsStore = NewsFeedStore(apiKey: "b5b0813704b64dd093c61ab51a87226e")
 
     private let leftPadding: CGFloat = 24
     private let rightPadding: CGFloat = 19
@@ -49,27 +49,27 @@ struct HomeView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 0) {
             ZStack {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(Color.yellow)
-                    .overlay {
-                        Image("bg")
-                            .resizable()
-                            .scaledToFill()
-                            .opacity(0.22)
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    }
+                Color.brandYellow
+
+                Image("bg")
+                    .resizable()
+                    .scaledToFill()
                     .frame(height: 76)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
+                    .opacity(1)
 
                 Text("Привет, \(vm.displayName)!")
                     .font(.system(size: 26, weight: .semibold))
                     .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, 16)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }
+            .frame(height: 76)
 
             Button {
                 router.presentOverlay(.barcode(
@@ -83,6 +83,11 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
         }
+        .background(Color.white)
+        .clipShape(
+            RoundedCorners(tl: 18, tr: 18, bl: 0, br: 0)
+        )
+        .shadow(radius: 0.6, y: 0.6)
     }
 
     private var litersCard: some View {
@@ -121,21 +126,36 @@ struct HomeView: View {
 
                 let topContentW = max(0, w - topLead - topTrail)
 
-                let topAvailH = max(0, h - topPad - bottomPad - betweenBlocks - bottomBlockMinHeight)
-                let capSizeH = (topAvailH - capSpacing * CGFloat(max(0, rows - 1))) / CGFloat(rows)
+                let topAvailH = max(
+                    0,
+                    h - topPad - bottomPad - betweenBlocks
+                        - bottomBlockMinHeight
+                )
+                let capSizeH =
+                    (topAvailH - capSpacing * CGFloat(max(0, rows - 1)))
+                    / CGFloat(rows)
 
-                let capSizeWMax = (topContentW - topHSpacing - capSpacing * CGFloat(max(0, cols - 1))) / CGFloat(cols)
+                let capSizeWMax =
+                    (topContentW - topHSpacing - capSpacing
+                        * CGFloat(max(0, cols - 1))) / CGFloat(cols)
                 let capSize = max(20, floor(min(capSizeWMax, capSizeH)))
 
-                let capsGridW = capSize * CGFloat(cols) + capSpacing * CGFloat(max(0, cols - 1))
-                let topBlockH = capSize * CGFloat(rows) + capSpacing * CGFloat(max(0, rows - 1))
+                let capsGridW =
+                    capSize * CGFloat(cols) + capSpacing
+                    * CGFloat(max(0, cols - 1))
+                let topBlockH =
+                    capSize * CGFloat(rows) + capSpacing
+                    * CGFloat(max(0, rows - 1))
 
                 let remainingW = max(0, topContentW - capsGridW - topHSpacing)
 
                 let bottleTargetW = min(bottleBase, remainingW)
                 let bottleTargetH = min(bottleBase * 1.35, topBlockH)
 
-                let bottleSize = max(bottleMin, floor(min(bottleTargetW, bottleTargetH)))
+                let bottleSize = max(
+                    bottleMin,
+                    floor(min(bottleTargetW, bottleTargetH))
+                )
 
                 let bottleXInset = max(0, (remainingW - bottleSize) / 2)
                 let bottleYInset = max(0, (topBlockH - bottleSize) / 2)
@@ -151,7 +171,11 @@ struct HomeView: View {
                             activeName: "activeCup",
                             inactiveName: "inactiveCup"
                         )
-                        .frame(width: capsGridW, height: topBlockH, alignment: .topLeading)
+                        .frame(
+                            width: capsGridW,
+                            height: topBlockH,
+                            alignment: .topLeading
+                        )
 
                         ZStack(alignment: .topLeading) {
                             Color.clear
@@ -162,7 +186,11 @@ struct HomeView: View {
                                 .padding(.leading, bottleXInset)
                                 .padding(.top, bottleYInset)
                         }
-                        .frame(width: remainingW, height: topBlockH, alignment: .topLeading)
+                        .frame(
+                            width: remainingW,
+                            height: topBlockH,
+                            alignment: .topLeading
+                        )
                     }
                     .padding(.top, topPad)
                     .padding(.leading, topLead)
@@ -188,7 +216,7 @@ struct HomeView: View {
                             .frame(maxHeight: .infinity)
 
                         Text(vm.giftMessageText)
-                            .padding(.top, 5)
+                            .padding(.top, 20)
                             .font(.system(size: 14, weight: .regular))
                             .foregroundStyle(.white.opacity(0.85))
                             .multilineTextAlignment(.leading)
@@ -214,7 +242,11 @@ struct HomeView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(height: 145)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .frame(
+                    maxWidth: .infinity,
+                    maxHeight: .infinity,
+                    alignment: .trailing
+                )
                 .clipped()
                 .offset(x: -10)
                 .allowsHitTesting(false)
@@ -244,17 +276,18 @@ struct HomeView: View {
             .padding(.trailing, 140)
 
             Button {
-                router.presentOverlay(.rules(
-                    title: vm.rulesTitle,
-                    subtitle: vm.rulesSubtitle,
-                    bodyText: vm.rulesBody
-                ))
+                router.presentOverlay(
+                    .rules(
+                        title: vm.rulesTitle,
+                        subtitle: vm.rulesSubtitle,
+                        bodyText: vm.rulesBody
+                    )
+                )
             } label: {
                 Image("moreInfo")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 32, height: 32)
-                    //.padding(10)
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
@@ -287,36 +320,54 @@ struct HomeView: View {
 
     private var newsStrip: some View {
         Group {
-            if newsStore.isLoadingInitial && newsStore.articles.isEmpty {
-                HStack(spacing: 10) {
-                    ProgressView()
-                    Text("Загружаем новости…")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 8)
-            } else if let err = newsStore.errorText, newsStore.articles.isEmpty {
-                Text(err)
-                    .foregroundStyle(.red)
-                    .font(.system(size: 13))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(newsStore.articles) { a in
-                            Button {
-                                router.presentSheet(.infoDetail(article: a))
-                            } label: {
-                                NewsMiniCard(article: a)
-                            }
-                            .buttonStyle(.plain)
-                            .onAppear {
-                                newsStore.loadMoreIfNeeded(current: a)
-                            }
+            let promos = InfoPromoFactory.promos()
+            let news = newsStore.articles
+
+            let showLoader = newsStore.isLoadingInitial && news.isEmpty
+            let showError = (newsStore.errorText != nil) && news.isEmpty
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(promos) { a in
+                        Button {
+                            router.presentSheet(.infoDetail(article: a))
+                        } label: {
+                            NewsMiniCard(article: a)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    ForEach(news) { a in
+                        Button {
+                            router.presentSheet(.infoDetail(article: a))
+                        } label: {
+                            NewsMiniCard(article: a)
+                        }
+                        .buttonStyle(.plain)
+                        .onAppear {
+                            newsStore.loadMoreIfNeeded(current: a)
                         }
                     }
-                    .padding(.vertical, 6)
+
+                    if showLoader {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Загружаем новости…")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: 132, alignment: .center)
+                    }
+
+                    if showError, let err = newsStore.errorText {
+                        Text(err)
+                            .foregroundStyle(.red)
+                            .font(.system(size: 13))
+                            .padding(.horizontal, 12)
+                            .frame(height: 132, alignment: .center)
+                    }
                 }
+                .padding(.vertical, 6)
             }
         }
     }

@@ -34,7 +34,7 @@ struct AppCoordinatorView: View {
                     .tabItem { Image(systemName: "cart"); Text("Магазины") }
                     .tag(AppTab.shops)
 
-                NavigationStack { ProfileStubView() }
+                NavigationStack { ProfileView() }
                     .tabItem { Image(systemName: "person"); Text("Профиль") }
                     .tag(AppTab.profile)
             }

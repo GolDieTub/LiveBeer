@@ -35,11 +35,8 @@ struct RulesPlate: View {
             Image("moreInfo")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 22, height: 22)
-                .padding(10)
-                .background(Color.yellow)
+                .frame(width: 32, height: 32)
                 .clipShape(Circle())
-                .shadow(radius: 1, y: 1)
                 .offset(x: 10, y: -10)
         }
     }
