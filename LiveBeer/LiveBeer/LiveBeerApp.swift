@@ -11,7 +11,7 @@ import SwiftUI
 @main
 struct LiveBeerApp: App {
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var newsStore = NewsFeedStore(apiKey: "") //b5b0813704b64dd093c61ab51a87226e
+    @StateObject private var newsStore = NewsFeedStore(apiKey: "b5b0813704b64dd093c61ab51a87226e")
 
     init() {
         let region = MKCoordinateRegion(
