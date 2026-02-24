@@ -180,14 +180,6 @@ struct HomeView: View {
                         ZStack(alignment: .topLeading) {
                             Color.clear
 
-                            if vm.litersGridTotal == 10 {
-                                Image("yellowBG")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 150, height: 150)
-                                    .offset(x: -30, y: -40)
-                            }
-
                             Button {
                                 vm.redeemGiftIfPossible()
                             } label: {
@@ -195,6 +187,11 @@ struct HomeView: View {
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: bottleSize, height: bottleSize)
+                                    .background {
+                                        if vm.isLitersComplete {
+                                            YellowGlow(size: 80)
+                                        }
+                                    }
                             }
                             .buttonStyle(.plain)
                             .disabled(!vm.isLitersComplete)
@@ -385,5 +382,39 @@ struct HomeView: View {
                 .padding(.vertical, 6)
             }
         }
+    }
+}
+
+struct YellowGlow: View {
+    var size: CGFloat = 150
+
+    var body: some View {
+        ZStack {
+            RadialGradient(
+                colors: [
+                    Color.yellow.opacity(0.70),
+                    Color.yellow.opacity(0.20),
+                    Color.yellow.opacity(0.00)
+                ],
+                center: .center,
+                startRadius: 0,
+                endRadius: size * 0.45
+            )
+            .blur(radius: size * 0.05)
+
+            RadialGradient(
+                colors: [
+                    Color.yellow.opacity(0.35),
+                    Color.yellow.opacity(0.00)
+                ],
+                center: .center,
+                startRadius: 0,
+                endRadius: size * 0.75
+            )
+            .blur(radius: size * 0.12)
+        }
+        .frame(width: size, height: size)
+        .compositingGroup()
+        .allowsHitTesting(false)
     }
 }
