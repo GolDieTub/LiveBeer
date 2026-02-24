@@ -13,7 +13,7 @@ final class HomeViewModel: ObservableObject {
     @Published var phone: String? = nil
     @Published private(set) var displayName: String = "Гость"
 
-    @Published var litersProgress: Int = 6
+    @Published var litersProgress: Int = 10
     @Published var litersGoal: Int = 10
     @Published var giftEveryLiters: Int = 11
 
@@ -84,6 +84,11 @@ final class HomeViewModel: ObservableObject {
         litersProgress = current
         litersGoal = goal
         giftEveryLiters = giftEvery
+    }
+
+    func redeemGiftIfPossible() {
+        guard isLitersComplete else { return }
+        litersProgress = 0
     }
 
     private func resolveDisplayName() {

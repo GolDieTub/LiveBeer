@@ -26,7 +26,7 @@ struct UnauthorizedView: View {
                 }
 
                 VStack(spacing: 16) {
-                    Spacer().frame(height: 40)
+                    Spacer().frame(height: 100)
 
                     Text("Войдите в\nприложение")
                         .font(.system(size: 34, weight: .bold))

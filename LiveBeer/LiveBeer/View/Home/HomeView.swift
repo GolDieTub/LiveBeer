@@ -179,12 +179,27 @@ struct HomeView: View {
 
                         ZStack(alignment: .topLeading) {
                             Color.clear
-                            Image(vm.giftBottleAssetName)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: bottleSize, height: bottleSize)
-                                .padding(.leading, bottleXInset)
-                                .padding(.top, bottleYInset)
+
+                            if vm.litersGridTotal == 10 {
+                                Image("yellowBG")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 150, height: 150)
+                                    .offset(x: -30, y: -40)
+                            }
+
+                            Button {
+                                vm.redeemGiftIfPossible()
+                            } label: {
+                                Image(vm.giftBottleAssetName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: bottleSize, height: bottleSize)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!vm.isLitersComplete)
+                            .padding(.leading, bottleXInset)
+                            .padding(.top, bottleYInset)
                         }
                         .frame(
                             width: remainingW,

@@ -153,19 +153,30 @@ struct RegistrationView: View {
                 }
                 .buttonStyle(.plain)
 
-                Group {
-                    Text("Я согласен с ")
-                        .foregroundStyle(Color.black.opacity(0.55))
-                    + Text("условиями обработки\nперсональных данных.")
-                        .foregroundStyle(.blue)
-                }
-                .font(.system(size: 12))
-                .lineSpacing(2)
+                Text(agreementAttributedText)
+                    .font(.system(size: 12))
+                    .lineSpacing(2)
+                    .environment(\.openURL, OpenURLAction { url in
+                        UIApplication.shared.open(url)
+                        return .handled
+                    })
             }
 
             inlineErrorText(vm.agreementError)
         }
         .modifier(ShakeEffect(animatableData: vm.agreementShake))
+    }
+
+    private var agreementAttributedText: AttributedString {
+        var full = AttributedString("Я согласен с ")
+        full.foregroundColor = Color.black.opacity(0.55)
+
+        var linkPart = AttributedString("условиями обработки\nперсональных данных.")
+        linkPart.foregroundColor = .blue
+        linkPart.link = URL(string: "https://rickroll.it")
+
+        full.append(linkPart)
+        return full
     }
 
     private var submitButton: some View {
