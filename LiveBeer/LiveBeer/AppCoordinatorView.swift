@@ -26,7 +26,7 @@ struct AppCoordinatorView: View {
                 .tabItem { Image(systemName: "house"); Text("Главная") }
                 .tag(AppTab.home)
 
-                NavigationStack { InfoStubView() }
+                NavigationStack { InfoView() }
                     .tabItem { Image(systemName: "info.circle"); Text("Инфо") }
                     .tag(AppTab.info)
 
