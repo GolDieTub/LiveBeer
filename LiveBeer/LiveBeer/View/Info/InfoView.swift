@@ -19,12 +19,30 @@ struct InfoView: View {
     @State private var presentedArticle: InfoArticle?
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 12) {
-                header
-                content
+        GeometryReader { geo in
+            ZStack {
+                VStack(spacing: 0) {
+                    Image("bg")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width,
+                               height: geo.size.height * 0.28,
+                               alignment: .bottom)
+                        .clipped()
+                        .ignoresSafeArea(edges: .top)
+                        .allowsHitTesting(false)
+
+                    Spacer()
+                }
+
+                VStack(spacing: 12) {
+                    header
+                    content
+                }
+                .padding(.top, 8)
             }
-            .padding(.top, 8)
+            .frame(width: geo.size.width, height: geo.size.height)
+            .background(Color.white.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .task { await newsStore.ensureInitialLoaded() }
             .sheet(item: $presentedArticle) { article in
@@ -106,14 +124,10 @@ struct InfoView: View {
                 .refreshable {
                     if selectedKind == .news {
                         await newsStore.refresh()
-                        withAnimation(.easeInOut) {
-                            proxy.scrollTo("TOP", anchor: .top)
-                        }
+                        withAnimation(.easeInOut) { proxy.scrollTo("TOP", anchor: .top) }
                     } else {
                         promos = InfoPromoFactory.promos()
-                        withAnimation(.easeInOut) {
-                            proxy.scrollTo("TOP", anchor: .top)
-                        }
+                        withAnimation(.easeInOut) { proxy.scrollTo("TOP", anchor: .top) }
                     }
                 }
             }

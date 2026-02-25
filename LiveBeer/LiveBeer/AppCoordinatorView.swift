@@ -16,29 +16,41 @@ struct AppCoordinatorView: View {
     var body: some View {
         ZStack {
             TabView(selection: $router.selectedTab) {
+
                 NavigationStack(path: $router.path) {
                     if session.isAuthenticated {
                         HomeView()
                     } else {
-                        UnauthorizedView(onLoginTap: { router.presentRoot(.welcome) })
+                        UnauthorizedView {
+                            router.presentRoot(.welcome)
+                        }
                     }
                 }
-                .tabItem { Image(systemName: "house"); Text("Главная") }
+                .tabItem {
+                    tabIcon(.home, image: "homeTab", title: "Главная")
+                }
                 .tag(AppTab.home)
 
                 NavigationStack { InfoView() }
-                    .tabItem { Image(systemName: "info.circle"); Text("Инфо") }
+                    .tabItem {
+                        tabIcon(.info, image: "infoTab", title: "Инфо")
+                    }
                     .tag(AppTab.info)
 
                 NavigationStack { ShopsStubView() }
-                    .tabItem { Image(systemName: "cart"); Text("Магазины") }
+                    .tabItem {
+                        tabIcon(.shops, image: "storeTab", title: "Магазины")
+                    }
                     .tag(AppTab.shops)
 
                 NavigationStack { ProfileView() }
-                    .tabItem { Image(systemName: "person"); Text("Профиль") }
+                    .tabItem {
+                        tabIcon(.profile, image: "profileTab", title: "Профиль")
+                    }
                     .tag(AppTab.profile)
             }
-
+            .tint(.blue)
+            
             if !router.modalStack.isEmpty {
                 ZStack {
                     ForEach(Array(router.modalStack.enumerated()), id: \.element.id) { index, route in
@@ -100,6 +112,20 @@ struct AppCoordinatorView: View {
                     })
                 )
             }
+        }
+    }
+    
+    @ViewBuilder
+    private func tabIcon(_ tab: AppTab, image: String, title: String) -> some View {
+        let isSelected = router.selectedTab == tab
+
+        VStack(spacing: 4) {
+            Image(image)
+                .renderingMode(.template)
+                .foregroundColor(isSelected ? .brandYellow : .black)
+
+            Text(title)
+                .foregroundColor(isSelected ? .brandYellow : .black)
         }
     }
 
