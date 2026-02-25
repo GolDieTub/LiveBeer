@@ -15,12 +15,10 @@ struct WelcomeView: View {
         VStack(spacing: 0) {
             Image("welcomeScreen")
                 .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity)
+                .scaledToFill()
+                .containerRelativeFrame(.horizontal, alignment: .center)
+                .clipped()
                 .ignoresSafeArea(edges: .top)
-                .padding(.horizontal, 0)
-
-            Spacer().frame(height: 50)
 
             Text("Программа\nлояльности для\nклиентов LiveBeer")
                 .font(LiveBeerTypography.welcomeTitle)
